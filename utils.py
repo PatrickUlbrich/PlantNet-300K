@@ -167,18 +167,89 @@ def get_model(args, n_classes):
 
 
 class Plantnet(ImageFolder):
-    def __init__(self, root, split, **kwargs):
+    def __init__(self, root, split, class_counts, threshold=100000, **kwargs):
         self.root = root
         self.split = split
+        
+        # start of my additional code
+        # select additional augmentations
+        additional_transforms = transforms.Compose([
+            # transforms.RandomGrayscale(p=0.1),
+            # transforms.RandomInvert(p=0.1),
+            # transforms.RandomPosterize(bits=2, p=0.1),
+            # transforms.RandomSolarize(threshold=128, p=0.1),
+            # transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.1),
+            # transforms.RandomAutocontrast(p=0.1),
+            # transforms.RandomEqualize(p=0.1),
+            # transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0)),
+            # transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.5, hue=0.05),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
+            transforms.RandomRotation(15),
+            transforms.RandomPerspective(distortion_scale=0.1, p=0.5),
+            transforms.ToTensor(),
+        ])
+        # end of my additional code
+        
         super().__init__(self.split_folder, **kwargs)
-
+        
+        # start of my additional code
+        self.class_counts = {}
+        for name, count in class_counts.items():
+            if name in self.class_to_idx:
+                self.class_counts[self.class_to_idx[name]] = count
+        
+        self.threshold = threshold
+        # end of my additional code
+        
     @property
     def split_folder(self):
         return os.path.join(self.root, self.split)
+    
+    # start of my additional code
+    # overwrite getitem, so that it is possible that the augmentation is only used on unterrepresented classes.
+    def __getitem__(self, index):
+        path, target = self.samples[index]
+        sample = self.loader(path)
+        
+        # apply additional transformations for underrepresented classes
+        if self.split == 'train' and hasattr(self, 'threshold'):
+            class_index = self.classes[target]
+            if class_index in self.class_counts and self.class_counts[class_index] < self.threshold:
+                sample = additional_transforms(sample)
+            else:
+                # apply standard transformations for other classes
+                sample = self.transform(sample)
+        else:
+            # apply standard transformations for validation and test splits
+            sample = self.transform(sample)
+        
+        # ensure sample is a tensor
+        if not isinstance(sample, torch.Tensor):
+            sample = transforms.ToTensor()(sample)
+        
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return sample, target
+    # end of my additional code
 
 
-def get_data(root, image_size, crop_size, batch_size, num_workers, pretrained):
-
+def get_data(root, image_size, crop_size, batch_size, num_workers, pretrained, threshold=999999, weighted_sampler=False):    
+    
+    # start of my additional code
+    # load number of images per class for the weighted sampling option    
+    import pandas as pd
+    class_counts_df = pd.read_csv('./results/class_counts.csv')
+    class_counts = dict(zip(class_counts_df['class'], class_counts_df['total']))
+    
+    # convert the keys in class_counts to string to match with class_to_idx
+    class_counts = {str(name): count for name, count in class_counts.items()}
+    # end of my additional code
+    
+    
     if pretrained:
         transform_train = transforms.Compose([transforms.Resize(size=image_size), transforms.RandomCrop(size=crop_size),
                                               transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -194,17 +265,38 @@ def get_data(root, image_size, crop_size, batch_size, num_workers, pretrained):
                                              transforms.ToTensor(), transforms.Normalize(mean=[0.4425, 0.4695, 0.3266],
                                                                                          std=[0.2353, 0.2219, 0.2325])])
 
-    trainset = Plantnet(root, 'train', transform=transform_train)
-    train_class_to_num_instances = Counter(trainset.targets)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+    trainset = Plantnet(root, 'train', class_counts, threshold, transform=transform_train) # added class_counts
+    
+    # start of my additional code
+    if weighted_sampler:
+        # set weights based on number of images and adapt class counts to use class indices instead of names
+        from torch.utils.data import WeightedRandomSampler
+        indexed_class_counts = {trainset.class_to_idx[name]: count for name, count in class_counts.items() if name in trainset.class_to_idx}
+
+        # compute class weights using the class counts
+        num_samples_per_class = [indexed_class_counts.get(cls_idx, 0) for cls_idx in range(len(trainset.classes))]
+        class_weights = 1. / torch.tensor(num_samples_per_class, dtype=torch.float)
+
+        # create a sampler for weighted sampling
+        sample_weights = class_weights[trainset.targets]
+        sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
+
+        train_class_to_num_instances = Counter(trainset.targets)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                                  sampler=sampler, num_workers=num_workers)
+        # end of my additional code
+        
+    else:
+        train_class_to_num_instances = Counter(trainset.targets)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=num_workers)
 
-    valset = Plantnet(root, 'val', transform=transform_test)
+    valset = Plantnet(root, 'val', class_counts, threshold, transform=transform_test) # added class_counts
 
     valloader = torch.utils.data.DataLoader(valset, batch_size=batch_size,
                                             shuffle=True, num_workers=num_workers)
 
-    testset = Plantnet(root, 'test', transform=transform_test)
+    testset = Plantnet(root, 'test', class_counts, threshold, transform=transform_test) # added class_counts
     test_class_to_num_instances = Counter(testset.targets)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=num_workers)
