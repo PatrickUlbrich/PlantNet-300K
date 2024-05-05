@@ -10,7 +10,7 @@
 This repository is a fork of the original PlantNet-300k repository that was used to produce the benchmark in the paper *"Pl@ntNet-300K: a plant image dataset with high label
 ambiguity and a long-tailed distribution"*.
 
-The publicly available code and datset was used in a study project as part of my masters degree in Data Science. my final examination paper can be found in the PDF. The jupyter notebook contains most of the additional code I created. I also implemented some changes in the files *cli.py*, *utils.py* and *main.py*. All changes are commented as *# start of my additional code* and end with *# end of my additional code*. Additional information can also be found in the original repository.
+The publicly available code and datset was used in a study project as part of my masters degree in Data Science. my final examination paper can be found in the file *examination_plantnet_300k_optimizations_MoE.pdf*. The Jupyter Notebook *plantnet_300k_ensemble_MoE* contains most of the additional code I created. I also implemented some changes in the files *cli.py*, *utils.py* and *main.py*. All changes are commented as *# start of my additional code* and end with *# end of my additional code*. Additional information can also be found in the original repository.
 
 ## Download the dataset
 
