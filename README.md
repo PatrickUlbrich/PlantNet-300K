@@ -7,57 +7,16 @@
   <img src="/images/4.jpg" width="180" hspace="2"/>
 </p>
 
-This repository contains the code used to produce the benchmark in the paper *"Pl@ntNet-300K: a plant image dataset with high label
+This repository is a fork of the original PlantNet-300k repository that was used to produce the benchmark in the paper *"Pl@ntNet-300K: a plant image dataset with high label
 ambiguity and a long-tailed distribution"*.
+
+The publicly available code and datset was used in a study project as part of my masters degree in Data Science. my final examination paper can be found in the PDF. The jupyter notebook contains most of the additional code I created. I also implemented some changes in the files *cli.py*, *utils.py* and *main.py*. All changes are commented as *# start of my additional code* and end with *# end of my additional code*. Additional information can also be found in the original repository.
 
 ## Download the dataset
 
 In order to train a model on the PlantNet-300K dataset, you first have to [download the dataset on Zenodo](https://zenodo.org/record/5645731#.Yuehg3ZBxPY).
 
-## Scientific Publication
-
-You can find detailed information about the dataset as well as extensive experiments in the [NeurIPS 2021 paper](https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/file/7e7757b1e12abcb736ab9a754ffb617a-Paper-round2.pdf).
-If you use this work for your research, please cite the paper:
-
-    @inproceedings{plantnet-300k,
-    author    = {C. Garcin and A. Joly and P. Bonnet and A. Affouard and \JC Lombardo and M. Chouet and M. Servajean and T. Lorieul and J. Salmon},
-    booktitle = {NeurIPS Datasets and Benchmarks 2021},
-    title     = {{Pl@ntNet-300K}: a plant image dataset with high label ambiguity and a long-tailed distribution},
-    year      = {2021},
-    }
-    
-## Overview
-
-Pl@ntNet-300K is a plant dataset containing 306,146 plant images covering 1081 species (the classes).
-Pl@ntNet-300K is characterized by high class ambiguity and strong class imbalance.
-The graph below highlights the long-tailed distribution of the dataset: 80% of species account for only 11% of the total number of images.
-
-<p align="center">
-<img src="images/lorentz_curve.jpg" width="50%">
-</p>
-
-The images are split into a train, val and test set, each containing the following number of images : 
-
-<div align="center">
-
-| Train | Val | Test |
-|-----------------|-----------------|-----------------|
-| 243,916    | 31,118    | 31,112    |
-
-</div>
-
-### Dataset Version // Meta-data files
-
-Make sure you download the latest version of the dataset in Zenodo (version 1.1 as in the link above, not 1.0).
-The difference lies in the metadata files, the images are the same.
-If you wish to download **ONLY** the metadata files (not possible in Zenodo), you will find them [here](https://lab.plantnet.org/seafile/d/bed81bc15e8944969cf6/).
-
-### Hyperparameters
-
-If you are looking for the hyperparameters used in the paper, you can find them in the [supplementary material](https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/7e7757b1e12abcb736ab9a754ffb617a-Abstract-round2.html).
-
-
-### Pre-trained models
+## Pre-trained models
 
 You can find the pre-trained models [here](https://lab.plantnet.org/seafile/d/01ab6658dad6447c95ae/).
 To load the pre-trained models, you can simply use the *load_model* function in *utils.py*. For instance, if you want to load the resnet18 weights:
@@ -74,14 +33,15 @@ load_model(model, filename=filename, use_gpu=use_gpu)
 ```
 
 Note that if you want to fine-tune the model on another dataset, you have to change the last layer. You can find examples in the *get_model* function in *utils.py*. 
-### Requirements
+
+## Requirements
 
 Only pytorch, torchvision are necessary for the code to run. 
 If you have installed anaconda, you can run the following command:
 
 ```conda env create -f plantnet_300k_env.yml```
 
-### Training a model
+## Training a model
 
 In order to train a model on the PlantNet-300K dataset, run the following command:
 
