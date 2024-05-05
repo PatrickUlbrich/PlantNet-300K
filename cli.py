@@ -25,7 +25,13 @@ def _add_training_parser(parser):
     group_training.add_argument('--epoch_decay', nargs='+', type=int, default=[])
     group_training.add_argument('--k', nargs='+', help='value of k for computing the topk loss and computing topk accuracy',
                                 required=True, type=int)
-
+    
+    # start of my additional code
+    group_training.add_argument('--threshold', type=int, default=100000, help='number of images under which additional augmentations are performed.')
+    group_training.add_argument('--weighted_sampler', action='store_true')
+    group_training.add_argument('--weighted_crossentropy', action='store_true')
+    group_training.add_argument('--continue_training', action='store_true')
+    # end of my additional code
 
 def _add_model_parser(parser):
     group_model = parser.add_argument_group('Model parameters')
